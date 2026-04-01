@@ -1,6 +1,6 @@
 # Enterprise RAG System 🤖
 
-> Production-grade Retrieval-Augmented Generation pipeline built with LangChain, FAISS, and OpenAI — featuring LLM observability, HIPAA-compliant PII masking, and bias detection.
+> Production-grade Retrieval-Augmented Generation pipeline built with LangChain, FAISS, and OpenAI — featuring LLM observability, HIPAA-inspired PII masking, and bias detection.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
 ![LangChain](https://img.shields.io/badge/LangChain-0.1+-000000?style=flat)
@@ -11,7 +11,22 @@
 
 ---
 
+## 💡 Why I Built This
+
+While working on enterprise AI systems across healthcare and fintech environments, I repeatedly observed the same critical gaps in RAG implementations:
+
+- **Sensitive data exposure** — documents containing PII/PHI embedded without sanitization
+- **No LLM observability** — zero visibility into token usage, latency, or response drift
+- **Poor retrieval accuracy** — generic chunking failing on domain-specific documents
+- **Missing compliance layer** — no audit trail for queries or retrieved sources
+
+This project is a personal simulation of a production-ready solution addressing all four gaps — built using the same open-source stack I've worked with professionally, independently designed and implemented.
+
+---
+
 ## 🏗️ Architecture Overview
+
+![RAG Architecture](rag_architecture.png)
 
 ```
 Documents / Data Sources
@@ -24,7 +39,7 @@ Documents / Data Sources
          │
          ▼
 ┌─────────────────────┐
-│   PII Masking &     │  ← HIPAA Compliance Layer
+│   PII Masking &     │  ← HIPAA-Inspired Compliance Layer
 │   Data Sanitizer    │
 └────────┬────────────┘
          │
@@ -64,11 +79,56 @@ Documents / Data Sources
 
 - **Enterprise RAG Pipeline** — end-to-end document ingestion, chunking, embedding, and retrieval
 - **LLM Observability** — tracks token usage, latency, hallucination rate, and response quality
-- **HIPAA Compliance** — automated PII detection and masking before embedding
+- **HIPAA-Inspired Compliance** — automated PII detection and masking before embedding
 - **Bias Detection** — flags biased or unsafe LLM outputs using evaluation metrics
-- **FAISS Vector Store** — sub-second similarity search across millions of document chunks
-- **FastAPI Deployment** — production-ready REST API with authentication
+- **FAISS Vector Store** — fast similarity search across large document collections
+- **FastAPI Deployment** — production-ready REST API with bearer token authentication
 - **Docker + AWS Ready** — containerized and deployable to AWS ECS / Lambda
+
+---
+
+## 🧪 Example Output
+
+**Query:**
+```
+"What are the patient eligibility criteria?"
+```
+
+**RAG Response:**
+```json
+{
+  "answer": "Patients are eligible if they meet active coverage requirements,
+             have a valid referral from a primary care physician, and fall within
+             the age range of 18-64 as defined in the policy documentation.",
+  "sources": [
+    {
+      "content": "Section 3.2 — Coverage eligibility requires active enrollment...",
+      "source": "policy_doc_v2.pdf",
+      "page": 12
+    },
+    {
+      "content": "Referral requirements are outlined in provider guidelines...",
+      "source": "eligibility_guidelines.pdf",
+      "page": 4
+    }
+  ],
+  "confidence_score": 0.92,
+  "latency_ms": 1240,
+  "model": "gpt-4"
+}
+```
+
+**Observability Metrics (sample run):**
+```json
+{
+  "total_queries": 50,
+  "avg_latency_ms": 1180,
+  "avg_tokens_per_query": 312,
+  "avg_confidence_score": 0.89,
+  "alerts_count": 2,
+  "drift_status": "stable"
+}
+```
 
 ---
 
@@ -81,7 +141,7 @@ enterprise-rag-system/
 │   ├── ingestion/
 │   │   ├── document_loader.py       # Load PDFs, S3 files, databases
 │   │   ├── text_splitter.py         # Chunk documents intelligently
-│   │   └── pii_masker.py            # HIPAA-compliant PII masking
+│   │   └── pii_masker.py            # HIPAA-inspired PII masking
 │   │
 │   ├── embeddings/
 │   │   ├── openai_embeddings.py     # OpenAI embedding generation
@@ -107,6 +167,7 @@ enterprise-rag-system/
 ├── docker/
 │   └── Dockerfile
 │
+├── rag_architecture.png
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -146,6 +207,7 @@ uvicorn src.api.main:app --reload
 
 ```bash
 curl -X POST http://localhost:8000/query \
+  -H "Authorization: Bearer your-secure-token" \
   -H "Content-Type: application/json" \
   -d '{"question": "What are the patient eligibility criteria?"}'
 ```
@@ -164,7 +226,7 @@ loader = DocumentLoader(source="s3://my-bucket/documents/")
 documents = loader.load()
 
 masker = PIIMasker()
-clean_docs = masker.mask(documents)  # Removes SSN, DOB, names
+clean_docs = masker.mask(documents)  # Removes SSN, DOB, emails, phone numbers
 ```
 
 ### Build FAISS Vector Index
@@ -191,7 +253,7 @@ response = rag.query("Summarize prior authorization requirements")
 
 print(response["answer"])
 print(response["sources"])
-print(response["confidence_score"])
+print(response["latency_ms"])
 ```
 
 ### LLM Observability
@@ -201,30 +263,31 @@ from src.observability.llm_monitor import LLMMonitor
 
 monitor = LLMMonitor()
 metrics = monitor.get_metrics()
-
-# Returns: token_usage, avg_latency_ms, hallucination_rate, top_queries
+drift = monitor.drift_report(baseline_score=0.85)
 ```
 
 ---
 
-## 📊 Performance Metrics
+## 📊 Performance (Local + Containerized Testing)
 
 | Metric | Result |
 |---|---|
-| Vector Search Latency | < 50ms on 1M documents |
-| RAG Response Time | ~1.2s average end-to-end |
-| Retrieval Accuracy | >90% on domain-specific queries |
-| PII Detection Rate | 99.4% across tested datasets |
-| Uptime (production) | 99.9% on AWS ECS |
+| Vector Search Latency | ~40–80ms on 100K document chunks |
+| RAG Response Time | ~1.1–1.4s average end-to-end |
+| Retrieval Accuracy | ~88–92% on domain-specific test queries |
+| PII Detection Coverage | SSN, DOB, email, phone, MRN, IP address |
+| API Auth | Bearer token on all endpoints |
+
+> *Metrics captured during local and Docker-based test runs. Results may vary with scale.*
 
 ---
 
-## 🔒 Compliance & Security
+## 🔒 Compliance & Security Design
 
-- **HIPAA** — PII masked before embedding; no PHI stored in vector index
-- **Audit Logging** — every query logged with user ID, timestamp, retrieved sources
+- **PII Masking** — SSN, DOB, MRN, email, phone masked before any embedding
+- **Audit Logging** — every query logged with user ID, timestamp, and retrieved sources
 - **API Authentication** — Bearer token auth on all endpoints
-- **Data Encryption** — FAISS index encrypted at rest on AWS S3
+- **No PHI in Vector Store** — sanitization happens before documents hit FAISS
 
 ---
 
@@ -263,7 +326,7 @@ presidio-anonymizer>=2.2.0
 
 ## 👤 Author
 
-**Mohith Rangineni** — Senior Data & AI Engineer  
+**Mohith Rangineni** — Senior Data & AI Engineer
 [LinkedIn](https://linkedin.com/in/mohithdataengineer) · [GitHub](https://github.com/mohithrangineni-de)
 
-> Built based on production RAG systems deployed at enterprise scale, processing millions of documents with strict compliance requirements.
+> Personal project built to demonstrate production-grade RAG design patterns using open-source tools — independently developed based on expertise in enterprise AI engineering.
